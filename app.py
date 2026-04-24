@@ -1,166 +1,225 @@
-from datetime import date
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>スタッフ用コンディション確認</title>
 
-import pandas as pd
-import streamlit as st
+<style>
+body{
+  font-family:sans-serif;
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
+h1{
+  margin-bottom:20px;
+}
+.row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+input,button{
+  padding:8px;
+  font-size:16px;
+}
+button{
+  cursor:pointer;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  border:1px solid #ddd;
+  padding:8px;
+  text-align:center;
+}
+th{
+  background:#f5f5f5;
+}
+.bad{
+  color:#d60000;
+  font-weight:bold;
+}
+.good{
+  color:#008000;
+}
+.card{
+  background:#f8f8f8;
+  padding:12px;
+  border-radius:10px;
+}
+</style>
+</head>
 
+<body>
 
-st.set_page_config(
-    page_title="無料版コンディションコメントアプリ",
-    page_icon="📝",
-    layout="centered",
-)
+<h1>スタッフ用コンディション確認</h1>
 
-st.title("無料版コンディションコメントアプリ")
-st.caption("画面には名前表示 / コメントはルールベースで自動生成")
+<div class="row">
+  <div>
+    開始日<br>
+    <input type="date" id="startDate">
+  </div>
 
+  <div>
+    終了日<br>
+    <input type="date" id="endDate">
+  </div>
 
-EXCEL_FILE = "condition_demo.xlsx"
+  <div style="align-self:end;">
+    <button onclick="loadData()">表示</button>
+  </div>
+</div>
 
+<div id="status"></div>
+<div id="result"></div>
 
-@st.cache_data
-def load_data():
-    athletes_df = pd.read_excel(EXCEL_FILE, sheet_name="athletes")
-    records_df = pd.read_excel(EXCEL_FILE, sheet_name="records")
-    return athletes_df, records_df
+<script>
+const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
+const SUPABASE_KEY = "あなたのanonkey";
 
+const STAFF_TEAM = "nigorigo"; // ←固定所属
 
-def make_comment(general_condition, fatigue, sleep_depth, appetite, spo2, pulse, special_notes):
-    comments = []
-    checks = []
+function todayStr(){
+ const d=new Date();
+ return d.toISOString().split("T")[0];
+}
 
-    # 総合状態
-    if general_condition <= 30:
-        comments.append("全般的な体調はかなり低めです。")
-        checks.append("体調確認を優先してください。")
-    elif general_condition <= 50:
-        comments.append("全般的な体調はやや低めです。")
+document.getElementById("endDate").value=todayStr();
 
-    # 疲労
-    if fatigue >= 80:
-        comments.append("疲労感がかなり高い状態です。")
-        checks.append("練習前の状態確認を推奨します。")
-    elif fatigue >= 70:
-        comments.append("疲労感が高めです。")
+const before=new Date();
+before.setDate(before.getDate()-7);
+document.getElementById("startDate").value=before.toISOString().split("T")[0];
 
-    # 睡眠
-    if sleep_depth <= 30:
-        comments.append("睡眠の質がかなり低めです。")
-    elif sleep_depth <= 40:
-        comments.append("睡眠の質がやや低めです。")
+async function loadData(){
 
-    # 食欲
-    if appetite <= 30:
-        comments.append("食欲低下がみられます。")
-    elif appetite <= 40:
-        comments.append("食欲がやや低めです。")
+document.getElementById("status").innerHTML="読み込み中...";
+document.getElementById("result").innerHTML="";
 
-    # SpO2
-    if spo2 <= 90:
-        comments.append("SpO2が低めです。")
-        checks.append("高地適応や体調変化の確認が必要です。")
-    elif spo2 <= 92:
-        comments.append("SpO2がやや低めです。")
+const start=document.getElementById("startDate").value;
+const end=document.getElementById("endDate").value;
 
-    # 脈拍
-    if pulse >= 80:
-        comments.append("脈拍数が高めです。")
-        checks.append("回復状況の確認を推奨します。")
+const url=
+`${SUPABASE_URL}/rest/v1/condition?team=eq.${STAFF_TEAM}&date=gte.${start}&date=lte.${end}&order=date.asc`;
 
-    # 特記事項
-    if "頭痛" in special_notes:
-        comments.append("頭痛の申告があります。")
-        checks.append("症状の継続有無を確認してください。")
+const res=await fetch(url,{
+headers:{
+apikey:SUPABASE_KEY,
+Authorization:`Bearer ${SUPABASE_KEY}`
+}
+});
 
-    if "咳" in special_notes or "のどの痛み" in special_notes or "倦怠感" in special_notes:
-        comments.append("体調変化を示す症状の申告があります。")
-        checks.append("感染兆候を含めた状態確認を推奨します。")
+const data=await res.json();
 
-    if "下痢" in special_notes or "腹痛" in special_notes or "吐き気" in special_notes:
-        comments.append("消化器症状の申告があります。")
-        checks.append("食事・水分摂取状況も確認してください。")
+if(!data || data.length===0){
+document.getElementById("status").innerHTML="データなし";
+return;
+}
 
-    if not comments:
-        return "大きな問題は目立たず、概ね安定しています。"
+document.getElementById("status").innerHTML=
+`${STAFF_TEAM} / ${data.length}件取得`;
 
-    text = " ".join(comments)
+const grouped={};
 
-    if checks:
-        unique_checks = []
-        for c in checks:
-            if c not in unique_checks:
-                unique_checks.append(c)
-        text += " " + unique_checks[0]
+data.forEach(row=>{
+if(!grouped[row.name]) grouped[row.name]=[];
+grouped[row.name].push(row);
+});
 
-    return text
+let html=`
+<table>
+<tr>
+<th>名前</th>
+<th>最新日</th>
+<th>体調</th>
+<th>疲労</th>
+<th>睡眠</th>
+<th>SpO₂</th>
+<th>脈拍</th>
+<th>コメント</th>
+</tr>
+`;
 
+Object.keys(grouped).forEach(name=>{
 
-try:
-    athletes_df, records_df = load_data()
-except FileNotFoundError:
-    st.error("condition_demo.xlsx が見つかりません。GitHubにアップロードしてください。")
-    st.stop()
-except ValueError:
-    st.error("Excel内に athletes シート または records シートがありません。")
-    st.stop()
+const arr=grouped[name];
+const latest=arr[arr.length-1];
+const prev=arr.length>=2 ? arr[arr.length-2] : null;
 
+let comment=[];
 
-if "active" in athletes_df.columns:
-    athletes_df = athletes_df[athletes_df["active"].astype(str).str.upper() == "TRUE"]
+if(prev){
 
-if athletes_df.empty:
-    st.error("athletes シートに有効な選手がいません。")
-    st.stop()
+if(latest.health - prev.health <= -10){
+comment.push("体調低下");
+}
 
+if(latest.fatigue - prev.fatigue >= 10){
+comment.push("疲労増加");
+}
 
-athletes_df["label"] = athletes_df.apply(
-    lambda row: f'{row["display_name"]}（{row["athlete_id"]} / {row["team_name"]}）',
-    axis=1
-)
+if(latest.sleep_quality - prev.sleep_quality <= -10){
+comment.push("睡眠低下");
+}
 
-selected_label = st.selectbox("選手を選んでください", athletes_df["label"].tolist())
-selected_row = athletes_df[athletes_df["label"] == selected_label].iloc[0]
+if(latest.spo2 - prev.spo2 <= -2){
+comment.push("SpO₂低下");
+}
 
-athlete_id = selected_row["athlete_id"]
-display_name = selected_row["display_name"]
-team_name = selected_row["team_name"]
+if(latest.pulse - prev.pulse >= 8){
+comment.push("脈拍上昇");
+}
 
+if(latest.health - prev.health >= 10){
+comment.push("体調改善");
+}
 
-st.subheader("今日の入力")
+if(latest.fatigue - prev.fatigue <= -10){
+comment.push("疲労軽減");
+}
 
-input_date = st.date_input("日付", value=date.today())
-general_condition = st.slider("全般的な体調（0=悪い, 100=良い）", 0, 100, 60)
-fatigue = st.slider("疲労感（0=無い, 100=強い）", 0, 100, 50)
-sleep_depth = st.slider("睡眠の深さ（0=浅い, 100=深い）", 0, 100, 50)
-appetite = st.slider("食欲（0=無い, 100=ある）", 0, 100, 60)
-spo2 = st.number_input("SpO2", min_value=0, max_value=100, value=95, step=1)
-pulse = st.number_input("脈拍数", min_value=0, value=60, step=1)
+}
 
-special_notes = st.multiselect(
-    "特記事項",
-    ["特になし", "咳", "鼻水", "頭痛", "下痢", "のどの痛み", "腹痛", "倦怠感", "吐き気"]
-)
+if(comment.length===0){
+comment.push("安定");
+}
 
-st.subheader("参考：過去データ")
-athlete_history = records_df[records_df["athlete_id"] == athlete_id].copy()
+let cls="";
 
-if not athlete_history.empty:
-    if "date" in athlete_history.columns:
-        athlete_history = athlete_history.sort_values("date", ascending=False)
-    st.dataframe(athlete_history.head(5), use_container_width=True)
-else:
-    st.info("この選手の過去データはまだありません。")
+if(comment.includes("体調低下") ||
+comment.includes("疲労増加") ||
+comment.includes("SpO₂低下")){
+cls="bad";
+}
 
-if st.button("コメント生成", type="primary"):
-    comment = make_comment(
-        general_condition=general_condition,
-        fatigue=fatigue,
-        sleep_depth=sleep_depth,
-        appetite=appetite,
-        spo2=spo2,
-        pulse=pulse,
-        special_notes=special_notes,
-    )
+if(comment[0]==="安定"){
+cls="good";
+}
 
-    st.success("コメントを生成しました")
-    st.write(f"**{display_name}（{athlete_id} / {team_name}）**")
-    st.write(comment)
+html+=`
+<tr>
+<td>${name}</td>
+<td>${latest.date}</td>
+<td>${latest.health}</td>
+<td>${latest.fatigue}</td>
+<td>${latest.sleep_quality}</td>
+<td>${latest.spo2 ?? ""}</td>
+<td>${latest.pulse ?? ""}</td>
+<td class="${cls}">${comment.join(" / ")}</td>
+</tr>
+`;
+
+});
+
+html+="</table>";
+
+document.getElementById("result").innerHTML=html;
+
+}
+</script>
+
+</body>
+</html>
