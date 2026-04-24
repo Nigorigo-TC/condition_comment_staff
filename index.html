@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>コンディション記録</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px;
+      line-height: 1.5;
+    }
+    input[type="range"] { width: 300px; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.75rem; }
+    fieldset {
+      border: 1px solid #ddd;
+      padding: 0.75rem 1rem 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    legend { font-weight: bold; padding: 0 4px; }
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+      display: block;
+      width: 100%;
+      padding: 0.4rem;
+      margin-top: 0.25rem;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .slider-row span {
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    .checkbox-group label,
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    small { font-size: 0.8rem; color: #555; }
+    button {
+      margin-top: 1rem;
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #message {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      margin: 0.25rem 0 0.5rem;
+    }
+    .result-card {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f4f6f8;
+      border-radius: 12px;
+      text-align: left;
+      line-height: 1.8;
+    }
+    .result-card h3 { margin-top: 0; }
+    .subtext {
+      color: #555;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>コンディション記録</h1>
+
+  <form id="condition-form">
+    <label>
+      1. 日付
+      <input type="date" name="date" required />
+    </label>
+
+    <label>
+      2. 所属
+      <input type="text" name="team" required />
+    </label>
+
+    <label>
+      3. 名前
+      <input type="text" name="name" required />
+      <small>※ フルネームで入力してください</small>
+    </label>
+
+    <label>
+      4. 全般的体調
+      <div class="slider-row">
+        <span>とても悪い</span>
+        <input type="range" name="health" min="0" max="100" value="50" />
+        <span>とても良い</span>
+      </div>
+    </label>
+
+    <label>
+      5. 疲労感
+      <div class="slider-row">
+        <span>全くない</span>
+        <input type="range" name="fatigue" min="0" max="100" value="50" />
+        <span>とても強い</span>
+      </div>
+    </label>
+
+    <label>
+      6. 睡眠時間（例：7.25, 7.5）
+      <input type="number" name="sleep_time" min="0" max="24" step="0.1" />
+      <small>※ 手入力もできます</small>
+    </label>
+
+    <label>
+      7. 睡眠の深さ
+      <div class="slider-row">
+        <span>とても浅い</span>
+        <input type="range" name="sleep_quality" min="0" max="100" value="50" />
+        <span>とても深い</span>
+      </div>
+    </label>
+
+    <fieldset>
+      <legend>8. 睡眠状況（複数選択）</legend>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="sleep_issues" value="夢を見た" />夢を見た</label>
+        <label><input type="checkbox" name="sleep_issues" value="何回も目覚めた" />何回も目覚めた</label>
+        <label><input type="checkbox" name="sleep_issues" value="何回もトイレに行った" />何回もトイレに行った</label>
+        <label><input type="checkbox" name="sleep_issues" value="寝汗をかいた" />寝汗をかいた</label>
+        <label><input type="checkbox" name="sleep_issues" value="寝付けなかった" />寝付けなかった</label>
+        <label><input type="checkbox" name="sleep_issues" value="普段より寝付けなかった" />普段より寝付けなかった</label>
+        <label><input type="checkbox" name="sleep_issues" value="特になし" />特になし</label>
+      </div>
+    </fieldset>
+
+    <label>
+      9. 食欲
+      <div class="slider-row">
+        <span>全く無い</span>
+        <input type="range" name="appetite" min="0" max="100" value="50" />
+        <span>とてもある</span>
+      </div>
+    </label>
+
+    <fieldset>
+      <legend>10. 故障・怪我の有無</legend>
+      <div class="radio-group">
+        <label><input type="radio" name="injury" value="無" checked />無</label>
+        <label><input type="radio" name="injury" value="有" />有</label>
+      </div>
+    </fieldset>
+
+    <label id="injury-part-wrapper" style="display:none;">
+      11. 故障・怪我の箇所
+      <input type="text" name="injury_part" />
+      <small>※ 故障・怪我がある場合は部位を具体的に入力してください（例：右足首）</small>
+    </label>
+
+    <label>
+      12. 故障・怪我の程度
+      <div class="slider-row">
+        <span>全くない</span>
+        <input type="range" name="injury_severity" min="0" max="100" value="50" />
+        <span>練習ができない</span>
+      </div>
+    </label>
+
+    <label>
+      13. 練習強度
+      <div class="slider-row">
+        <span>非常に楽</span>
+        <input type="range" name="training_intensity" min="0" max="100" value="50" />
+        <span>非常にきつい</span>
+      </div>
+    </label>
+
+    <fieldset>
+      <legend>14. 前日の排便の有無</legend>
+      <div class="radio-group">
+        <label><input type="radio" name="bowel_movement" value="有" checked />有</label>
+        <label><input type="radio" name="bowel_movement" value="無" />無</label>
+      </div>
+    </fieldset>
+
+    <div id="stool-section">
+      <p>便の形（1〜7）</p>
+      <img src="stool_chart.png" alt="便の形チャート" />
+      <label>
+        15. 前日の便の形
+        <select name="bowel_shape">
+          <option value="">選択してください</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+        </select>
+        <small>※ 上記の画像を参考に選択してください</small>
+      </label>
+    </div>
+
+    <label>
+      16. 前日の走行距離（km）
+      <input type="number" name="running_distance" min="0" max="100" step="0.1" />
+      <small>※ 手入力もできます</small>
+    </label>
+
+    <label>
+      17. SpO₂（％）
+      <input type="number" name="spo2" min="0" max="100" />
+      <small>※ 手入力もできます</small>
+    </label>
+
+    <label>
+      18. 脈拍数（拍/分）
+      <input type="number" name="pulse" min="0" max="200" />
+      <small>※ 手入力もできます</small>
+    </label>
+
+    <label>
+      19. 体温（℃）
+      <input type="number" name="temperature" min="0" max="42" step="0.1" />
+      <small>※ 手入力もできます</small>
+    </label>
+
+    <label>
+      20. 体重（kg）
+      <input type="number" name="weight" min="0" max="150" step="0.1" />
+      <small>※ 手入力もできます</small>
+    </label>
+
+    <fieldset>
+      <legend>21. 特記事項（複数選択）</legend>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="symptoms" value="特になし" />特になし</label>
+        <label><input type="checkbox" name="symptoms" value="咳" />咳</label>
+        <label><input type="checkbox" name="symptoms" value="鼻水" />鼻水</label>
+        <label><input type="checkbox" name="symptoms" value="頭痛" />頭痛</label>
+        <label><input type="checkbox" name="symptoms" value="息苦しさ" />息苦しさ</label>
+        <label><input type="checkbox" name="symptoms" value="下痢" />下痢</label>
+        <label><input type="checkbox" name="symptoms" value="喉の痛み" />喉の痛み</label>
+        <label><input type="checkbox" name="symptoms" value="悪寒" />悪寒</label>
+        <label><input type="checkbox" name="symptoms" value="腹痛" />腹痛</label>
+        <label><input type="checkbox" name="symptoms" value="熱感" />熱感</label>
+        <label><input type="checkbox" name="symptoms" value="倦怠感" />倦怠感</label>
+        <label><input type="checkbox" name="symptoms" value="吐き気" />吐き気</label>
+        <label><input type="checkbox" name="symptoms" value="痰" />痰</label>
+        <label><input type="checkbox" name="symptoms" value="月経" />月経</label>
+        <label><input type="checkbox" name="symptoms" value="月経痛（腰痛・下腹部痛等）" />月経痛（腰痛・下腹部痛等）</label>
+        <label><input type="checkbox" name="symptoms" value="月経前不調（腰痛やむくみ、体重増加）" />月経前不調（腰痛やむくみ、体重増加）</label>
+        <label><input type="checkbox" name="symptoms" value="不正出血" />不正出血</label>
+        <label><input type="checkbox" name="symptoms" value="服薬" />服薬</label>
+        <label><input type="checkbox" name="symptoms" value="その他" />その他</label>
+      </div>
+      <small>※ 特にない場合は「特になし」を選択してください</small>
+    </fieldset>
+
+    <label id="other-symptoms-wrapper" style="display:none;">
+      21-1. その他の症状
+      <input type="text" name="other_symptoms" />
+    </label>
+
+    <button type="submit">送信</button>
+  </form>
+
+  <div id="message"></div>
+
+  <script>
+    const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
+
+    const form = document.getElementById("condition-form");
+    const messageDiv = document.getElementById("message");
+
+    const injuryRadios = document.querySelectorAll('input[name="injury"]');
+    const injuryPartWrapper = document.getElementById("injury-part-wrapper");
+    const injuryPartInput = document.querySelector('input[name="injury_part"]');
+
+    function updateInjuryPartVisibility() {
+      const selected = document.querySelector('input[name="injury"]:checked');
+      if (selected && selected.value === "有") {
+        injuryPartWrapper.style.display = "block";
+      } else {
+        injuryPartWrapper.style.display = "none";
+        if (injuryPartInput) injuryPartInput.value = "";
+      }
+    }
+    injuryRadios.forEach(r => r.addEventListener("change", updateInjuryPartVisibility));
+    updateInjuryPartVisibility();
+
+    const bowelRadios = document.querySelectorAll('input[name="bowel_movement"]');
+    const stoolSection = document.getElementById("stool-section");
+    const bowelShapeSelect = document.querySelector('select[name="bowel_shape"]');
+
+    function updateStoolVisibility() {
+      const selected = document.querySelector('input[name="bowel_movement"]:checked');
+      if (selected && selected.value === "有") {
+        stoolSection.style.display = "block";
+      } else {
+        stoolSection.style.display = "none";
+        if (bowelShapeSelect) bowelShapeSelect.value = "";
+      }
+    }
+    bowelRadios.forEach(r => r.addEventListener("change", updateStoolVisibility));
+    updateStoolVisibility();
+
+    const symptomCheckboxes = document.querySelectorAll('input[name="symptoms"]');
+    const otherWrapper = document.getElementById("other-symptoms-wrapper");
+    const otherInput = document.querySelector('input[name="other_symptoms"]');
+
+    function updateOtherSymptomsVisibility() {
+      const othersChecked = Array.from(symptomCheckboxes).some(
+        cb => cb.value === "その他" && cb.checked
+      );
+      if (othersChecked) {
+        otherWrapper.style.display = "block";
+      } else {
+        otherWrapper.style.display = "none";
+        if (otherInput) otherInput.value = "";
+      }
+    }
+    symptomCheckboxes.forEach(cb => cb.addEventListener("change", updateOtherSymptomsVisibility));
+    updateOtherSymptomsVisibility();
+
+    function avg(arr) {
+      if (!arr || arr.length === 0) return null;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function splitText(text) {
+      if (!text) return [];
+      return text.split(",").map(s => s.trim()).filter(Boolean);
+    }
+
+    function hasItem(text, target) {
+      return splitText(text).includes(target);
+    }
+
+    function addFinding(list, type, category, priority, text) {
+      list.push({ type, category, priority, text });
+    }
+
+    function getTodayFindings(data) {
+      const findings = [];
+
+      if (data.health <= 30) addFinding(findings, "bad", "recovery", 3, "全般的な体調がかなり低めです");
+      else if (data.health <= 40) addFinding(findings, "bad", "recovery", 2, "全般的な体調が低めです");
+
+      if (data.fatigue >= 80) addFinding(findings, "bad", "recovery", 3, "疲労感がかなり高い状態です");
+      else if (data.fatigue >= 70) addFinding(findings, "bad", "recovery", 2, "疲労感が高めです");
+
+      if (data.sleep_time !== null && data.sleep_time < 6) {
+        addFinding(findings, "bad", "recovery", 2, "睡眠時間が短めです");
+      }
+
+      if (data.sleep_quality <= 30) addFinding(findings, "bad", "recovery", 3, "睡眠の深さがかなり浅めです");
+      else if (data.sleep_quality <= 40) addFinding(findings, "bad", "recovery", 2, "睡眠の深さが浅めです");
+
+      if (data.appetite <= 40) addFinding(findings, "bad", "recovery", 2, "食欲が低めです");
+
+      if (data.injury === "有") addFinding(findings, "bad", "injury", 3, "故障・怪我の申告があります");
+      if (data.injury_severity >= 70) addFinding(findings, "bad", "injury", 3, "故障・怪我の程度が高めです");
+
+      if (data.training_intensity >= 80) addFinding(findings, "bad", "load", 2, "前日の練習強度が高めです");
+
+      if (data.spo2 !== null && data.spo2 <= 92) addFinding(findings, "bad", "altitude", 3, "SpO₂が低めです");
+      if (data.pulse !== null && data.pulse >= 80) addFinding(findings, "bad", "altitude", 2, "脈拍数が高めです");
+
+      if (data.temperature !== null && data.temperature >= 37.0) {
+        addFinding(findings, "bad", "illness", 3, "体温がやや高めです");
+      }
+
+      if (data.bowel_shape === "6" || data.bowel_shape === "7") {
+        addFinding(findings, "bad", "digestive", 2, "便性状は軟便傾向です");
+      }
+
+      if (hasItem(data.symptoms, "頭痛")) {
+        addFinding(findings, "bad", "altitude", 3, "頭痛の申告があります");
+      }
+
+      if (
+        hasItem(data.symptoms, "咳") ||
+        hasItem(data.symptoms, "喉の痛み") ||
+        hasItem(data.symptoms, "鼻水") ||
+        hasItem(data.symptoms, "悪寒") ||
+        hasItem(data.symptoms, "熱感") ||
+        hasItem(data.symptoms, "倦怠感")
+      ) {
+        addFinding(findings, "bad", "illness", 3, "体調変化を示す症状があります");
+      }
+
+      if (
+        hasItem(data.symptoms, "下痢") ||
+        hasItem(data.symptoms, "腹痛") ||
+        hasItem(data.symptoms, "吐き気")
+      ) {
+        addFinding(findings, "bad", "digestive", 3, "消化器症状の申告があります");
+      }
+
+      return findings;
+    }
+
+    async function getHistory(data) {
+      const url =
+        `${SUPABASE_URL}/rest/v1/condition` +
+        `?team=eq.${encodeURIComponent(data.team)}` +
+        `&name=eq.${encodeURIComponent(data.name)}` +
+        `&select=date,health,fatigue,sleep_time,sleep_quality,sleep_issues,appetite,injury,injury_severity,training_intensity,bowel_movement,bowel_shape,running_distance,spo2,pulse,temperature,symptoms` +
+        `&order=date.asc`;
+
+      const res = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+
+      if (!res.ok) {
+        console.error("履歴取得エラー");
+        return [];
+      }
+
+      return await res.json();
+    }
+
+    function generateTrendFindings(today, history) {
+      const findings = getTodayFindings(today);
+
+      const historyWithoutToday = history.filter(row => row.date !== today.date);
+      const prev = historyWithoutToday.length > 0
+        ? historyWithoutToday[historyWithoutToday.length - 1]
+        : null;
+
+      const recent3 = historyWithoutToday.slice(-3);
+
+      if (prev) {
+        if (prev.health != null) {
+          const diff = today.health - prev.health;
+          if (diff <= -10) addFinding(findings, "bad", "recovery", 3, "全般的な体調が前日より低下しています");
+          else if (diff >= 10) addFinding(findings, "good", "recovery", 2, "全般的な体調は前日より改善しています");
+        }
+
+        if (prev.fatigue != null) {
+          const diff = today.fatigue - prev.fatigue;
+          if (diff >= 10) addFinding(findings, "bad", "recovery", 3, "疲労感が前日より上昇しています");
+          else if (diff <= -10) addFinding(findings, "good", "recovery", 2, "疲労感は前日より軽減しています");
+        }
+
+        if (prev.sleep_quality != null) {
+          const diff = today.sleep_quality - prev.sleep_quality;
+          if (diff <= -10) addFinding(findings, "bad", "recovery", 2, "睡眠の深さが前日より低下しています");
+          else if (diff >= 10) addFinding(findings, "good", "recovery", 2, "睡眠の深さは前日より改善しています");
+        }
+
+        if (prev.appetite != null) {
+          const diff = today.appetite - prev.appetite;
+          if (diff <= -10) addFinding(findings, "bad", "recovery", 2, "食欲が前日より低下しています");
+          else if (diff >= 10) addFinding(findings, "good", "recovery", 2, "食欲は前日より改善しています");
+        }
+
+        if (prev.spo2 != null && today.spo2 != null) {
+          const diff = today.spo2 - prev.spo2;
+          if (diff <= -2) addFinding(findings, "bad", "altitude", 3, "SpO₂が前日より低下しています");
+          else if (diff >= 2) addFinding(findings, "good", "altitude", 2, "SpO₂は前日より改善しています");
+        }
+
+        if (prev.pulse != null && today.pulse != null) {
+          const diff = today.pulse - prev.pulse;
+          if (diff >= 8) addFinding(findings, "bad", "altitude", 2, "脈拍数が前日より上昇しています");
+          else if (diff <= -8) addFinding(findings, "good", "recovery", 2, "脈拍数は前日より低下しています");
+        }
+
+        if (prev.injury_severity != null) {
+          const diff = today.injury_severity - prev.injury_severity;
+          if (diff >= 10) addFinding(findings, "bad", "injury", 3, "故障・怪我の程度が前日より強くなっています");
+          else if (diff <= -10) addFinding(findings, "good", "injury", 2, "故障・怪我の程度は前日より軽減しています");
+        }
+      }
+
+      const fatigueAvg = avg(recent3.map(x => x.fatigue).filter(x => x != null));
+      if (fatigueAvg != null) {
+        if (today.fatigue >= fatigueAvg + 10) addFinding(findings, "bad", "recovery", 2, "疲労感が最近の平均より高くなっています");
+        else if (today.fatigue <= fatigueAvg - 10) addFinding(findings, "good", "recovery", 2, "疲労感は最近の平均より低くなっています");
+      }
+
+      const healthAvg = avg(recent3.map(x => x.health).filter(x => x != null));
+      if (healthAvg != null) {
+        if (today.health <= healthAvg - 10) addFinding(findings, "bad", "recovery", 2, "全般的な体調が最近の平均より低下しています");
+        else if (today.health >= healthAvg + 10) addFinding(findings, "good", "recovery", 2, "全般的な体調は最近の平均より良好です");
+      }
+
+      const sleepAvg = avg(recent3.map(x => x.sleep_quality).filter(x => x != null));
+      if (sleepAvg != null) {
+        if (today.sleep_quality <= sleepAvg - 10) addFinding(findings, "bad", "recovery", 2, "睡眠の深さが最近の平均より低下しています");
+        else if (today.sleep_quality >= sleepAvg + 10) addFinding(findings, "good", "recovery", 2, "睡眠の深さは最近の平均より良好です");
+      }
+
+      const spo2Avg = avg(recent3.map(x => x.spo2).filter(x => x != null));
+      if (spo2Avg != null && today.spo2 != null) {
+        if (today.spo2 <= spo2Avg - 2) addFinding(findings, "bad", "altitude", 3, "SpO₂が最近の平均より低下しています");
+        else if (today.spo2 >= spo2Avg + 2) addFinding(findings, "good", "altitude", 2, "SpO₂は最近の平均より改善しています");
+      }
+
+      return findings;
+    }
+
+    function buildNaturalComment(findings) {
+      if (!findings || findings.length === 0) {
+        return "大きな問題は目立たず、コンディションは概ね安定しています。本日も通常どおり状態を確認しながら進めてください。";
+      }
+
+      const unique = [];
+      const seen = new Set();
+
+      findings
+        .sort((a, b) => b.priority - a.priority)
+        .forEach(f => {
+          const key = `${f.type}-${f.text}`;
+          if (!seen.has(key)) {
+            unique.push(f);
+            seen.add(key);
+          }
+        });
+
+      const bad = unique.filter(f => f.type === "bad");
+      const good = unique.filter(f => f.type === "good");
+
+      const badByCategory = {
+        illness: bad.filter(f => f.category === "illness"),
+        altitude: bad.filter(f => f.category === "altitude"),
+        injury: bad.filter(f => f.category === "injury"),
+        recovery: bad.filter(f => f.category === "recovery"),
+        digestive: bad.filter(f => f.category === "digestive"),
+        load: bad.filter(f => f.category === "load")
+      };
+
+      const goodByCategory = {
+        altitude: good.filter(f => f.category === "altitude"),
+        injury: good.filter(f => f.category === "injury"),
+        recovery: good.filter(f => f.category === "recovery")
+      };
+
+      if (bad.length > 0) {
+        const main = [];
+
+        if (badByCategory.illness.length > 0) {
+          main.push("体調変化を示す所見がみられます");
+        }
+
+        if (badByCategory.altitude.length > 0) {
+          main.push("SpO₂や脈拍、頭痛など高地環境への反応として確認したい項目があります");
+        }
+
+        if (badByCategory.injury.length > 0) {
+          main.push("故障・怪我に関する申告があります");
+        }
+
+        if (badByCategory.recovery.length > 0) {
+          const recoveryTexts = badByCategory.recovery.slice(0, 2).map(f => f.text.replace("。", ""));
+          main.push(recoveryTexts.join("、"));
+        }
+
+        if (main.length === 0) {
+          main.push(bad.slice(0, 2).map(f => f.text.replace("。", "")).join("、"));
+        }
+
+        let comment = main.slice(0, 2).join("。") + "。";
+
+        if (good.length > 0) {
+          const goodTexts = good.slice(0, 2).map(f => f.text.replace("。", ""));
+          comment += `一方で、${goodTexts.join("、")}。`;
+        }
+
+        if (badByCategory.load.length > 0 && badByCategory.recovery.length > 0) {
+          comment += "前日の負荷も踏まえると、回復状態を確認したうえで練習に入るのがよさそうです。";
+        } else if (badByCategory.altitude.length > 0) {
+          comment += "高地環境への反応や体調変化の継続に注意してください。";
+        } else if (badByCategory.injury.length > 0) {
+          comment += "痛みや違和感の変化を確認し、必要に応じて練習内容を調整してください。";
+        } else if (badByCategory.recovery.length > 0) {
+          comment += "回復状態を確認しながら、ウォームアップ時の反応をみてください。";
+        } else if (badByCategory.digestive.length > 0) {
+          comment += "食事・水分摂取状況もあわせて確認してください。";
+        }
+
+        const highPriorityCount = bad.filter(f => f.priority >= 3).length;
+        if (highPriorityCount >= 3) {
+          comment += "複数項目に注意所見があるため、練習前にスタッフで状態確認を行ってください。";
+        } else {
+          comment += "練習前の状態確認を推奨します。";
+        }
+
+        return comment;
+      }
+
+      if (good.length > 0) {
+        const recoveryGood = goodByCategory.recovery.slice(0, 2).map(f => f.text.replace("。", ""));
+        const altitudeGood = goodByCategory.altitude.slice(0, 1).map(f => f.text.replace("。", ""));
+        const injuryGood = goodByCategory.injury.slice(0, 1).map(f => f.text.replace("。", ""));
+
+        const parts = [...recoveryGood, ...altitudeGood, ...injuryGood];
+
+        if (parts.length > 0) {
+          return `${parts.join("、")}。全体として回復傾向がみられます。引き続き状態を確認しながら練習を進めてください。`;
+        }
+
+        return "前日または最近の平均と比べて、いくつかの項目で改善傾向がみられます。引き続き経過を確認してください。";
+      }
+
+      return "大きな問題は目立たず、コンディションは概ね安定しています。本日も通常どおり状態を確認しながら進めてください。";
+    }
+
+    function generateTrendComment(today, history) {
+      const findings = generateTrendFindings(today, history);
+      return buildNaturalComment(findings);
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      messageDiv.textContent = "送信中です...";
+
+      const formData = new FormData(form);
+
+      const injury = formData.get("injury") || "無";
+      const bowelMovement = formData.get("bowel_movement") || "有";
+
+      const sleepIssues = Array.from(
+        document.querySelectorAll('input[name="sleep_issues"]:checked')
+      ).map(el => el.value).join(", ");
+
+      const symptoms = Array.from(
+        document.querySelectorAll('input[name="symptoms"]:checked')
+      ).map(el => el.value).join(", ");
+
+      const data = {
+        date: formData.get("date"),
+        team: formData.get("team")?.trim(),
+        name: formData.get("name")?.trim(),
+        health: Number(formData.get("health") || 0),
+        fatigue: Number(formData.get("fatigue") || 0),
+        sleep_time: formData.get("sleep_time") ? Number(formData.get("sleep_time")) : null,
+        sleep_quality: Number(formData.get("sleep_quality") || 0),
+        sleep_issues: sleepIssues,
+        appetite: Number(formData.get("appetite") || 0),
+        injury: injury,
+        injury_part: formData.get("injury_part")?.trim() || "",
+        injury_severity: Number(formData.get("injury_severity") || 0),
+        training_intensity: Number(formData.get("training_intensity") || 0),
+        bowel_movement: bowelMovement,
+        bowel_shape: formData.get("bowel_shape") || "",
+        running_distance: formData.get("running_distance")
+          ? Number(formData.get("running_distance")) : null,
+        spo2: formData.get("spo2") ? Number(formData.get("spo2")) : null,
+        pulse: formData.get("pulse") ? Number(formData.get("pulse")) : null,
+        temperature: formData.get("temperature")
+          ? Number(formData.get("temperature")) : null,
+        weight: formData.get("weight") ? Number(formData.get("weight")) : null,
+        symptoms: symptoms,
+        other_symptoms: formData.get("other_symptoms")?.trim() || "",
+        exported: false
+      };
+
+      if (!data.team || !data.name) {
+        messageDiv.textContent = "❗ 所属と名前を入力してください。";
+        return;
+      }
+
+      if (injury === "有" && !data.injury_part) {
+        messageDiv.textContent = "❗ 11. 故障の箇所を入力してください。";
+        return;
+      }
+
+      if (!data.symptoms) {
+        messageDiv.textContent = "❗ 21. 特記事項を選択してください。";
+        return;
+      }
+
+      if (symptoms.includes("その他") && !data.other_symptoms) {
+        messageDiv.textContent = "❗ 21-1. その他の症状を入力してください。";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/condition`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          messageDiv.textContent = `送信エラー: ${res.status} ${text}`;
+          return;
+        }
+
+        const history = await getHistory(data);
+        const comment = generateTrendComment(data, history);
+
+        document.body.innerHTML = `
+          <div style="
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 48px 16px;
+            text-align: center;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          ">
+            <h1 style="font-size: 1.6rem;">✅ 送信が完了しました</h1>
+
+            <p style="margin-top: 16px; font-size: 1.1rem;">
+              ご協力ありがとうございました。<br>
+              本日もよろしくお願いいたします。
+            </p>
+
+            <div class="result-card">
+              <h3>📋 本日のコメント</h3>
+              <p>${comment}</p>
+              <p class="subtext">※ 当日の入力と過去データの変動をもとに自動表示しています</p>
+            </div>
+
+            <button
+              style="
+                margin-top: 32px;
+                padding: 10px 20px;
+                font-size: 1rem;
+                cursor: pointer;
+              "
+              onclick="location.reload()"
+            >
+              もう一度入力する
+            </button>
+          </div>
+        `;
+      } catch (err) {
+        console.error(err);
+        messageDiv.textContent = "通信エラーが発生しました。ネットワークを確認してください。";
+      }
+    });
+  </script>
+</body>
+</html>
